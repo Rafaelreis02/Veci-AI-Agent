@@ -28,8 +28,7 @@ interface WebhookPayload {
 }
 
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE || 'f5ed86-2.myshopify.com';
-const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
-const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET;
+const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 const CERTIFICADO_BASE_URL = 'https://certificado-exportacao.vercel.app/download';
 
 export async function POST(request: NextRequest) {
@@ -83,8 +82,8 @@ export async function POST(request: NextRequest) {
 }
 
 async function addOrderComment(orderId: number, orderNumber: number): Promise<void> {
-  if (!SHOPIFY_API_KEY || !SHOPIFY_API_SECRET) {
-    throw new Error('Shopify API credentials not configured');
+  if (!SHOPIFY_ACCESS_TOKEN) {
+    throw new Error('SHOPIFY_ACCESS_TOKEN not configured');
   }
 
   const certificadoUrl = `${CERTIFICADO_BASE_URL}/${orderNumber}`;
@@ -92,28 +91,7 @@ async function addOrderComment(orderId: number, orderNumber: number): Promise<vo
   // Comentário a adicionar
   const commentBody = `📄 Certificado de Exportação: ${certificadoUrl}`;
 
-  // Usar GraphQL Admin API para adicionar comentário
-  const graphqlEndpoint = `https://${SHOPIFY_STORE}/admin/api/2024-01/graphql.json`;
-  
-  const query = `
-    mutation orderUpdate($input: OrderInput!) {
-      orderUpdate(input: $input) {
-        order {
-          id
-          name
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }
-  `;
-
-  // Alternativa: usar REST API para adicionar nota/transaction
-  const restEndpoint = `https://${SHOPIFY_STORE}/admin/api/2024-01/orders/${orderId}/transactions.json`;
-  
-  // Ou usar metafields para guardar o link
+  // Usar metafields para guardar o link
   const metafieldEndpoint = `https://${SHOPIFY_STORE}/admin/api/2024-01/orders/${orderId}/metafields.json`;
 
   const metafieldPayload = {
@@ -127,16 +105,13 @@ async function addOrderComment(orderId: number, orderNumber: number): Promise<vo
 
   // Também tentar adicionar como nota da encomenda
   const noteEndpoint = `https://${SHOPIFY_STORE}/admin/api/2024-01/orders/${orderId}.json`;
-  
-  const credentials = Buffer.from(`${SHOPIFY_API_KEY}:${SHOPIFY_API_SECRET}`).toString('base64');
 
   // 1. Adicionar metafield com o link
   const metafieldResponse = await fetch(metafieldEndpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Basic ${credentials}`,
-      'X-Shopify-Access-Token': SHOPIFY_API_SECRET
+      'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN
     },
     body: JSON.stringify(metafieldPayload)
   });
@@ -152,8 +127,7 @@ async function addOrderComment(orderId: number, orderNumber: number): Promise<vo
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Basic ${credentials}`,
-      'X-Shopify-Access-Token': SHOPIFY_API_SECRET
+      'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN
     },
     body: JSON.stringify({
       order: {
