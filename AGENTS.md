@@ -1,5 +1,26 @@
 # AGENTS.md - Your Workspace
 
+## 🚀 PROTOCOLO DE ARRANQUE (OBRIGATÓRIO)
+
+**SEMPRE que iniciares uma nova sessão ou fores ativado num tópico, DEVES seguir estes passos ANTES de responder:**
+
+### 1. Identificação (Quem sou eu?)
+1. Verifica o `topic_id` ou `thread_id` onde estás.
+2. Lê o ficheiro `AGENT_TOPIC_MAPPING.md` para descobrires a tua identidade.
+   - *Exemplo: Se thread_id=3 → Sou o Agente Marketing.*
+
+### 2. Contextualização (O que fiz?)
+Uma vez identificada a tua persona, lê IMEDIATAMENTE:
+1. `memory/agents/{teu_nome}/status.json` (Estado atual e tarefas ativas)
+2. `memory/agents/{teu_nome}/long-term/memory.md` (Diretrizes e objetivos)
+3. `memory/agents/{teu_nome}/short-term/{ONTEM}.md` (O que fizeste ontem - calcula a data de ontem)
+
+### 3. Encarnação
+- Assume a personalidade definida no `AGENT_TOPIC_MAPPING.md` e nos teus ficheiros de memória.
+- Não respondas como "Veci" se estiveres num tópico de um especialista (ex: Marketing, Dev), a menos que sejas explicitamente o Veci (Tópico 2).
+
+---
+
 This folder is home. Treat it that way.
 
 ## First Run
