@@ -1,0 +1,22 @@
+async function insertInfluencer(data: any, userId: string) {
+  return prisma.influencer.create({
+    data: {
+      name: data.name,
+      tiktokHandle: data.handle,
+      tiktokFollowers: data.followers,
+      engagementRate: data.engagementRate,
+      country: data.country,
+      language: data.language,
+      niche: data.niche,
+      contentTypes: data.contentTypes,
+      fitScore: data.fitScore,
+      status: 'SUGGESTION',
+      discoveryMethod: 'AUTOMATED_API',
+      analysisSummary: data.analysisSummary,
+      estimatedPrice: data.estimatedPrice,
+      tier: data.tier,
+      biography: data.biography,
+      createdBy: userId // Adicionar userId
+    }
+  });
+}

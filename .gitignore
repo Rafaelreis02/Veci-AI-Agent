@@ -1,0 +1,52 @@
+# Ficheiros a ignorar no Git
+
+# Secrets e variáveis de ambiente
+.env
+.env.local
+.env.*.local
+OP_TOKEN_NEW.txt
+env.op
+env.ts
+.op-service-account
+.op-env
+
+# Dados sensíveis
+*.pem
+*.key
+*.secret
+secrets/
+credentials/
+
+# Logs
+*.log
+logs/
+.openclaw/backup.log
+
+# Dependências
+node_modules/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ficheiros temporários
+*.tmp
+*.temp
+.cache/
+
+# Backups locais (mantemos só no Git)
+*.bak
+*.backup
+
+# Dados de runtime (não essenciais)
+.openclaw/sessions/
+.openclaw/cache/
+
+# Nota: memory/ é IMPORTANTE e deve ser commitado!
+# Contém toda a memória dos agentes

@@ -1,0 +1,25 @@
+{
+  "agent": "veci",
+  "role": "coordinator",
+  "topic_id": 2,
+  "topic_name": "Main",
+  "lastUpdate": "2026-02-22T01:00:00+00:00",
+  "currentTasks": [
+    {"id": 1, "title": "Coordenar agentes", "status": "active", "progress": 100},
+    {"id": 2, "title": "Mapear tópicos", "status": "completed", "progress": 100}
+  ],
+  "pendingTasks": [],
+  "completedToday": [1, 2],
+  "blockers": [],
+  "notes": "Veci (eu) - Coordenador no tópico Main",
+  "managedAgents": [
+    {"name": "marketing", "topic": 3},
+    {"name": "influencers", "topic": 4},
+    {"name": "customer-support", "topic": 5},
+    {"name": "operacoes", "topic": 6},
+    {"name": "analises", "topic": 7},
+    {"name": "prog-influencers", "topic": 8},
+    {"name": "prog-email", "topic": 9},
+    {"name": "prog-contabilidade", "topic": 10}
+  ]
+}

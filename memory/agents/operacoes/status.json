@@ -1,0 +1,11 @@
+{
+  "agent": "operacoes",
+  "topic_id": 6,
+  "topic_name": "Ops",
+  "lastUpdate": "2026-02-22T01:00:00+00:00",
+  "currentTasks": [],
+  "pendingTasks": [],
+  "completedToday": [],
+  "blockers": [],
+  "notes": "Agente Operações ativado - Tópico 6"
+}
