@@ -7,16 +7,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-interface ShopifyOrder {
-  id: number;
-  name: string;
-  order_number: number;
-  shipping_address?: {
-    country_code?: string;
-    country?: string;
-  };
-}
-
 interface WebhookPayload {
   id: number;
   name: string;
@@ -32,66 +22,71 @@ const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 const CERTIFICADO_BASE_URL = 'https://certificado-exportacao.vercel.app/download';
 
 export async function POST(request: NextRequest) {
+  console.log('🔔 Webhook received at:', new Date().toISOString());
+  
   try {
-    // Verificar HMAC do webhook (segurança Shopify)
-    const hmac = request.headers.get('x-shopify-hmac-sha256');
+    // Log headers para debug
     const topic = request.headers.get('x-shopify-topic');
+    const hmac = request.headers.get('x-shopify-hmac-sha256');
     
-    if (!hmac) {
-      console.error('Missing HMAC header');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    console.log('📋 Topic:', topic);
+    console.log('🔑 HMAC present:', !!hmac);
 
     // Só processar webhooks de criação de encomenda
     if (topic !== 'orders/create') {
+      console.log('⏭️ Ignored: not orders/create');
       return NextResponse.json({ message: 'Ignored: not orders/create' }, { status: 200 });
     }
 
-    // Parse do body
-    const order: WebhookPayload = await request.json();
-    
-    console.log(`Processing order #${order.order_number} (${order.name})`);
+    // Verificar se Access Token está configurado
+    if (!SHOPIFY_ACCESS_TOKEN) {
+      console.error('❌ SHOPIFY_ACCESS_TOKEN not configured');
+      return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
+    }
 
-    // Verificar se é envio internacional (fora da UE)
-    // Se não houver shipping_address ou for país UE, ainda assim adicionamos
-    // o comentário porque pode ser necessário para alfândega
-    const countryCode = order.shipping_address?.country_code?.toUpperCase();
+    // Parse do body
+    let order: WebhookPayload;
+    try {
+      order = await request.json();
+    } catch (parseError) {
+      console.error('❌ Failed to parse webhook body:', parseError);
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
     
-    // Lista de países da UE (códigos ISO)
-    const euCountries = [
-      'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
-      'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
-      'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'
-    ];
+    console.log(`📦 Processing order #${order.order_number} (${order.name}), ID: ${order.id}`);
 
     // Adicionar comentário à encomenda
-    await addOrderComment(order.id, order.order_number);
-
-    console.log(`Comment added to order #${order.order_number}`);
+    try {
+      await addOrderComment(order.id, order.order_number);
+      console.log(`✅ Comment added to order #${order.order_number}`);
+    } catch (apiError) {
+      console.error('❌ Failed to add comment:', apiError);
+      return NextResponse.json({ 
+        error: 'Failed to update order', 
+        details: apiError instanceof Error ? apiError.message : 'Unknown error'
+      }, { status: 500 });
+    }
 
     return NextResponse.json({ 
       success: true, 
-      message: `Comment added to order #${order.order_number}`,
-      isInternational: countryCode ? !euCountries.includes(countryCode) : null
+      message: `Comment added to order #${order.order_number}`
     });
 
   } catch (error) {
-    console.error('Webhook error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('❌ Webhook error:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 
 async function addOrderComment(orderId: number, orderNumber: number): Promise<void> {
-  if (!SHOPIFY_ACCESS_TOKEN) {
-    throw new Error('SHOPIFY_ACCESS_TOKEN not configured');
-  }
-
   const certificadoUrl = `${CERTIFICADO_BASE_URL}/${orderNumber}`;
   
-  // Comentário a adicionar
-  const commentBody = `📄 Certificado de Exportação: ${certificadoUrl}`;
+  console.log(`🔗 Certificate URL: ${certificadoUrl}`);
 
-  // Usar metafields para guardar o link
+  // 1. Adicionar metafield com o link
   const metafieldEndpoint = `https://${SHOPIFY_STORE}/admin/api/2024-01/orders/${orderId}/metafields.json`;
 
   const metafieldPayload = {
@@ -103,31 +98,35 @@ async function addOrderComment(orderId: number, orderNumber: number): Promise<vo
     }
   };
 
-  // Também tentar adicionar como nota da encomenda
-  const noteEndpoint = `https://${SHOPIFY_STORE}/admin/api/2024-01/orders/${orderId}.json`;
+  console.log(`📤 Sending metafield request to: ${metafieldEndpoint}`);
 
-  // 1. Adicionar metafield com o link
   const metafieldResponse = await fetch(metafieldEndpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN
+      'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN!
     },
     body: JSON.stringify(metafieldPayload)
   });
 
+  const metafieldResponseText = await metafieldResponse.text();
+  console.log(`📥 Metafield response status: ${metafieldResponse.status}`);
+  console.log(`📥 Metafield response body: ${metafieldResponseText}`);
+
   if (!metafieldResponse.ok) {
-    const errorText = await metafieldResponse.text();
-    console.error('Metafield error:', errorText);
-    throw new Error(`Failed to add metafield: ${metafieldResponse.status}`);
+    throw new Error(`Failed to add metafield: ${metafieldResponse.status} - ${metafieldResponseText}`);
   }
 
   // 2. Atualizar nota da encomenda (order note) - visível no admin
+  const noteEndpoint = `https://${SHOPIFY_STORE}/admin/api/2024-01/orders/${orderId}.json`;
+
+  console.log(`📤 Sending note update to: ${noteEndpoint}`);
+
   const noteResponse = await fetch(noteEndpoint, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN
+      'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN!
     },
     body: JSON.stringify({
       order: {
@@ -137,13 +136,15 @@ async function addOrderComment(orderId: number, orderNumber: number): Promise<vo
     })
   });
 
+  const noteResponseText = await noteResponse.text();
+  console.log(`📥 Note response status: ${noteResponse.status}`);
+  console.log(`📥 Note response body: ${noteResponseText}`);
+
   if (!noteResponse.ok) {
-    const errorText = await noteResponse.text();
-    console.error('Note update error:', errorText);
-    // Não falhar se só a nota falhar, metafield já foi criado
+    console.error(`⚠️ Note update failed but metafield succeeded: ${noteResponse.status}`);
   }
 
-  console.log(`Metafield and note added to order ${orderId}`);
+  console.log(`✅ Metafield and note processed for order ${orderId}`);
 }
 
 // Health check endpoint
@@ -151,6 +152,7 @@ export async function GET() {
   return NextResponse.json({ 
     status: 'OK', 
     service: 'certificado-exportacao-webhook',
-    version: '1.0.0'
+    version: '1.1.0',
+    configured: !!SHOPIFY_ACCESS_TOKEN
   });
 }
