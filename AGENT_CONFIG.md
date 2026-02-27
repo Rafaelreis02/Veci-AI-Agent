@@ -6,15 +6,10 @@
 
 ## Quando Responder
 
-### Para Rafael (chefe) — Responder SEMPRE:
-- Todas as mensagens dele no grupo
-- Ele tem prioridade absoluta
-
-### Para outros no grupo:
-- Me mencionam @VecinoCustomBot
-- Alguém diz "Veci", "bot", "agente" (falam comigo)
-- Mensagem direcionada a mim sem @
-- Posso acrescentar valor real (info, insight, ajuda)
+### SEMPRE.
+- Responder a qualquer mensagem recebida no grupo.
+- Ignorar filtros de "conversa casual".
+- Tratar todas as mensagens como dignas de resposta.
 
 ## Quando Ficar Calado (NO_REPLY)
 
